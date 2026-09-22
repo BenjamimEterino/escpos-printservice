@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Qualquer dispositivo USB da classe "impressora" (7) -->
+    <usb-device class="7" />
+    <!-- Se a sua impressora não se identificar como classe 7, adicione o VID/PID
+         (em DECIMAL, tal como aparecem no ecrã da app), por exemplo:
+    <usb-device vendor-id="1155" product-id="22304" />
+    -->
+</resources>

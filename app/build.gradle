@@ -1,0 +1,28 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'mz.escpos.printservice'
+    // Ajuste para uma versão que exista em $ANDROID_HOME/platforms (ex.: 34 ou 35)
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "mz.escpos.printservice"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+// Sem dependências externas: usa apenas APIs do próprio Android.
