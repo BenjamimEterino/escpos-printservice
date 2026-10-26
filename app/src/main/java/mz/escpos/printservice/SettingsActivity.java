@@ -1,6 +1,9 @@
 package mz.escpos.printservice;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -32,13 +35,16 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /** Ecrã de configuração (UI feita em código, sem layouts XML nem bibliotecas). */
 public class SettingsActivity extends Activity {
+    private static final int REQ_BLUETOOTH = 2;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private LinearLayout printersBox;
     private LinearLayout usbBox;
+    private LinearLayout btBox;
     private RadioGroup widthGroup;
     private CheckBox bridgeEnabled;
     private EditText bridgePort;
@@ -104,6 +110,14 @@ public class SettingsActivity extends Activity {
         usbBox = vbox();
         root.addView(usbBox);
 
+        // ---- Bluetooth ----
+        root.addView(header("Impressoras Bluetooth (emparelhadas)"));
+        root.addView(text("Inclui a impressora interna de terminais como o ZCS Z92. Uma impressora "
+                + "Bluetooth externa tem de ser emparelhada primeiro nas definições do Android."));
+        root.addView(button("Procurar impressoras Bluetooth", v -> refreshBluetooth(true)));
+        btBox = vbox();
+        root.addView(btBox);
+
         // ---- Opções ----
         root.addView(header("Opções de impressão"));
         PrinterConfig.Options o = PrinterConfig.loadOptions(this);
@@ -155,7 +169,13 @@ public class SettingsActivity extends Activity {
         super.onResume();
         refreshPrinters();
         refreshUsb();
+        refreshBluetooth(false);
         refreshBridgeStatus();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQ_BLUETOOTH) refreshBluetooth(false);
     }
 
     private void refreshPrinters() {
@@ -273,6 +293,47 @@ public class SettingsActivity extends Activity {
                         dev.getVendorId(), dev.getProductId(), selectedWidth()));
                 UsbPermission.request(this, um, dev);
                 toast("Impressora USB adicionada");
+                refreshPrinters();
+            }));
+        }
+    }
+
+    @SuppressLint("MissingPermission") // verificada por BluetoothTransport.hasPermission
+    private void refreshBluetooth(boolean askPermission) {
+        btBox.removeAllViews();
+        BluetoothAdapter ad = BluetoothTransport.adapter(this);
+        if (ad == null) {
+            btBox.addView(text("Este dispositivo não tem Bluetooth."));
+            return;
+        }
+        if (!BluetoothTransport.hasPermission(this)) {
+            if (askPermission) {
+                requestPermissions(new String[]{android.Manifest.permission.BLUETOOTH_CONNECT}, REQ_BLUETOOTH);
+            } else {
+                btBox.addView(text("Toque em \"Procurar impressoras Bluetooth\" e autorize \"Dispositivos "
+                        + "próximos\". Se não aparecer o pedido, active a permissão em Definições → Apps → "
+                        + getString(R.string.app_name) + " → Permissões."));
+            }
+            return;
+        }
+        if (!ad.isEnabled()) {
+            btBox.addView(text("O Bluetooth está desligado."));
+            return;
+        }
+        Set<BluetoothDevice> devices = ad.getBondedDevices();
+        if (devices == null || devices.isEmpty()) {
+            btBox.addView(text("Nenhum dispositivo Bluetooth emparelhado."));
+            return;
+        }
+        for (BluetoothDevice dev : devices) {
+            String name = dev.getName();
+            String label = name == null || name.isEmpty() ? "Impressora Bluetooth" : name;
+            String address = dev.getAddress();
+            btBox.addView(text(label + "\n" + address
+                    + (BluetoothTransport.looksLikePrinter(dev) ? " · impressora" : "")));
+            btBox.addView(button("Usar esta impressora", v -> {
+                PrinterConfig.addOrReplace(this, PrinterConfig.bluetooth(label, address, selectedWidth()));
+                toast("Impressora Bluetooth adicionada");
                 refreshPrinters();
             }));
         }

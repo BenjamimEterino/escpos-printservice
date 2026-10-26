@@ -1,7 +1,7 @@
 # Impressora ESC/POS – Serviço de Impressão Android
 
-Imprime na SP-POS894 (ou qualquer impressora térmica ESC/POS) pela rede (TCP 9100) ou por
-USB, de duas formas:
+Imprime na SP-POS894 (ou qualquer impressora térmica ESC/POS) pela rede (TCP 9100), por
+USB ou por Bluetooth, de duas formas:
 
 1. **Impressão silenciosa por HTTP** — o Odoo POS (Chrome) ou uma app React Native chamam
    um endpoint local (`POST /print`) e o recibo sai na impressora **sem qualquer diálogo**.
@@ -17,7 +17,9 @@ imagem, acentos e tipos de letra saem sempre correctos. A impressão silenciosa 
 bytes ESC/POS já prontos (sem passar pelo rasterizador), para apps que preferem construir o
 recibo directamente em comandos ESC/POS.
 
-Ligações suportadas: **USB (OTG)** e **Ethernet (TCP 9100)**.
+Ligações suportadas: **USB (OTG)**, **Ethernet (TCP 9100)** e **Bluetooth (SPP)**. O
+Bluetooth serve também para terminais Android com impressora embutida que a expõem como
+impressora Bluetooth virtual (ex.: ZCS Z92).
 
 ## Compilar (sem Android Studio)
 
@@ -52,13 +54,17 @@ Requisitos: JDK 17+ (o Java 21 serve) e o Android SDK que já usa para o React N
    - **USB**: ligue a impressora com um cabo/adaptador OTG → "Procurar dispositivos USB" →
      "Usar esta impressora" → aceite a permissão. Se o Android perguntar se quer abrir a app
      ao ligar a impressora, marque **Usar sempre** (a permissão fica permanente).
+   - **Bluetooth**: emparelhe primeiro a impressora nas definições do Android (a impressora
+     interna de terminais como o ZCS Z92 já vem emparelhada) → "Procurar impressoras
+     Bluetooth" → autorize **Dispositivos próximos** → "Usar esta impressora". Escolha antes a
+     largura do papel (estes terminais usam 58 mm).
 3. Toque em **Imprimir teste**.
 
 ## Impressão silenciosa por HTTP (sem diálogo)
 
 Na app **Impressora ESC/POS** → secção "Impressão directa (HTTP local, sem diálogo)":
 
-1. Configure pelo menos uma impressora (rede ou USB) e, se tiver mais do que uma, toque em
+1. Configure pelo menos uma impressora (rede, USB ou Bluetooth) e, se tiver mais do que uma, toque em
    **Tornar predefinida** na que deve ser usada quando o pedido não indicar qual usar.
 2. Active **"Activar servidor local"**, ajuste a porta se necessário (predefinição `9200`) e,
    opcionalmente, defina uma **chave de API** (fica exigida no cabeçalho `X-Api-Key` de todos
@@ -73,7 +79,7 @@ aparelho reiniciar, desde que tenha ficado activado.
 | Método | Caminho | Descrição |
 |---|---|---|
 | `GET`  | `/health` | `{"status":"ok"}` — verificação simples de que o serviço está no ar. |
-| `GET`  | `/printers` | Lista as impressoras configuradas: `[{"id":...,"name":...,"type":"net"\|"usb","widthMm":80,"default":true}]`. |
+| `GET`  | `/printers` | Lista as impressoras configuradas: `[{"id":...,"name":...,"type":"net"\|"usb"\|"bt","widthMm":80,"default":true}]`. |
 | `POST` | `/print` ou `/print?printer=ID` | Imprime o corpo do pedido. Sem `printer=`, usa a impressora predefinida (falha com `400` se não houver nenhuma definida e existir mais do que uma configurada). |
 
 Autenticação (se tiver definido uma chave de API): cabeçalho `X-Api-Key: <chave>` em todos os
@@ -179,6 +185,9 @@ de rede (aparelho diferente), active `usesCleartextTraffic`/`networkSecurityConf
 - **USB pede permissão sempre**: a impressora pode não se identificar como classe 7.
   Acrescente o VID/PID (em decimal, mostrado na app) em `app/src/main/res/xml/device_filter.xml`
   e recompile.
+- **Bluetooth "não foi possível ligar"**: confirme que a impressora está ligada, emparelhada
+  e que nenhuma outra app está ligada a ela (o Bluetooth série só aceita uma ligação de cada
+  vez).
 - **Texto cinzento/fraco**: desligue o "Modo imagem"; para logótipos ligue-o.
 - **Rede não liga**: telemóvel e impressora têm de estar na mesma rede; teste com
   `ping IP` num computador.

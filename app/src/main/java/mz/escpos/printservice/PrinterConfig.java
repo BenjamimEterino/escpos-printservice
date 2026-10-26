@@ -16,6 +16,7 @@ public final class PrinterConfig {
 
     public static final String TYPE_NET = "net";
     public static final String TYPE_USB = "usb";
+    public static final String TYPE_BT = "bt";
 
     private static final String PREFS = "escpos_printers";
     private static final String KEY_LIST = "printers";
@@ -30,6 +31,7 @@ public final class PrinterConfig {
         public int port = 9100;
         public int vendorId;
         public int productId;
+        public String btAddress;
         public int paperWidthMm = 80;
 
         /** 8 pontos/mm: 72 mm úteis = 576 pontos (papel 80 mm); 48 mm = 384 pontos (papel 58 mm). */
@@ -40,6 +42,9 @@ public final class PrinterConfig {
         public String describe() {
             if (TYPE_NET.equals(type)) {
                 return "Rede " + host + ":" + port + " · papel " + paperWidthMm + " mm";
+            }
+            if (TYPE_BT.equals(type)) {
+                return "Bluetooth " + btAddress + " · papel " + paperWidthMm + " mm";
             }
             return String.format(Locale.US, "USB VID %04X PID %04X (%d/%d) · papel %d mm",
                     vendorId, productId, vendorId, productId, paperWidthMm);
@@ -54,6 +59,7 @@ public final class PrinterConfig {
             o.put("port", port);
             o.put("vid", vendorId);
             o.put("pid", productId);
+            o.put("bt", btAddress == null ? "" : btAddress);
             o.put("width", paperWidthMm);
             return o;
         }
@@ -67,6 +73,7 @@ public final class PrinterConfig {
             e.port = o.optInt("port", 9100);
             e.vendorId = o.optInt("vid");
             e.productId = o.optInt("pid");
+            e.btAddress = o.optString("bt");
             e.paperWidthMm = o.optInt("width", 80);
             return e;
         }
@@ -99,6 +106,16 @@ public final class PrinterConfig {
         e.productId = pid;
         e.paperWidthMm = widthMm;
         e.id = usbId(vid, pid);
+        return e;
+    }
+
+    public static Entry bluetooth(String name, String address, int widthMm) {
+        Entry e = new Entry();
+        e.type = TYPE_BT;
+        e.name = name;
+        e.btAddress = address;
+        e.paperWidthMm = widthMm;
+        e.id = "bt:" + address;
         return e;
     }
 
